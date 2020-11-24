@@ -29,7 +29,7 @@ CREATE TABLE Stimmkreis (
     wahlkreis varchar(255) not null,
     landtagswahl int not null,
     name varchar(255) not null,
-    primary key (nummer, wahlkreis),
+    primary key (nummer, wahlkreis, landtagswahl),
     foreign key (wahlkreis, landtagswahl) references Wahlkreis
 );
 
@@ -42,14 +42,14 @@ CREATE TABLE Kandidat (
     landtagswahl int not null references Landtagswahl,
     partei varchar(255) not null references Partei,
     listenplatz int not null,
-    anzahlErststimmen int not null,
+    anzahlErststimmen int,
     anzahlZweitstimmen int not null,
     listenkandidatIn varchar(255) not null,
     direktkandidatInWahlkreis varchar(255),
     direktkandidatInStimmkreis int,
     primary key (persNr, landtagswahl),
     foreign key (landtagswahl, listenkandidatIn) references Wahlkreis(landtagswahl, name),
-    foreign key (direktkandidatInWahlkreis, direktkandidatInStimmkreis) references Stimmkreis(wahlkreis, nummer)
+    foreign key (direktkandidatInWahlkreis, direktkandidatInStimmkreis, landtagswahl) references Stimmkreis(wahlkreis, nummer, landtagswahl)
 );
 
 CREATE TABLE Stimme (
@@ -61,7 +61,8 @@ CREATE TABLE Zweitstimme (
     id int not null primary key references Stimme,
     stimmkreisWahlkreis varchar(255) not null,
     stimmkreisNummer int not null,
-    foreign key (stimmkreisWahlkreis, stimmkreisNummer) references Stimmkreis(wahlkreis, nummer)
+    stimmkreisLandtagswahl int not null,
+    foreign key (stimmkreisWahlkreis, stimmkreisNummer, stimmkreisLandtagswahl) references Stimmkreis(wahlkreis, nummer, landtagswahl)
 );
 
 CREATE TABLE ZweitstimmeKandidat (
