@@ -182,7 +182,9 @@ def insert_kandidaten(connection, kandidaten):
     )
     cur.close()
 
-def generate_erststimmen(connection, kandidaten):
+def generate_erststimmen(connection, kandidaten, stimmkreise=None):
+    if stimmkreise is not None:
+        kandidaten = [k for k in kandidaten if k.direktkandidatInStimmkreis in stimmkreise]
     # create temp table erststimme (kandidat, landtagswahl, anzahlerststimmen)
     # create temp table zweitstimme (kandidat, landtagswahl, stimmkreis, wahlkreis, anzahl)
     cur = connection.cursor()
@@ -208,7 +210,9 @@ def generate_erststimmen(connection, kandidaten):
     )
     cur.close()
 
-def generate_zweitstimmen(connection, kandidaten):
+def generate_zweitstimmen(connection, kandidaten, stimmkreise=None):
+    if stimmkreise is not None:
+        kandidaten = [k for k in kandidaten if k.direktkandidatInStimmkreis in stimmkreise]
     cur = connection.cursor()
     cur.execute(
         """
