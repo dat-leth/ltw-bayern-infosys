@@ -143,7 +143,8 @@ def parse_kandidaten(ergebnis_xml_path, jahr):
 def insert_landtagswahl(connection, jahr):
     cur = connection.cursor()
     cur.execute("INSERT INTO w.landtagswahl (jahr, wahltag) VALUES " +
-                "(2013, '2013-09-15'), (2018, '2018-10-14')")
+                "(2013, '2013-09-15'), (2018, '2018-10-14') " +
+                "ON CONFLICT (jahr) DO NOTHING")
     cur.close()
 
 def insert_wahlkreise(connection, wahlkreise):
@@ -168,7 +169,7 @@ def insert_parteien(connection, parteien):
     cur = connection.cursor()
     psycopg2.extras.execute_values(
         cur,
-        'INSERT INTO W.Partei (name) VALUES %s',
+        'INSERT INTO W.Partei (name) VALUES %s ON CONFLICT (name) DO NOTHING',
         [(p.parteiname, ) for p in parteien]
     )
     cur.close()
@@ -188,10 +189,6 @@ def generate_erststimmen(connection, kandidaten, stimmkreise=None):
     # create temp table erststimme (kandidat, landtagswahl, anzahlerststimmen)
     # create temp table zweitstimme (kandidat, landtagswahl, stimmkreis, wahlkreis, anzahl)
     cur = connection.cursor()
-    cur.execute(
-        'INSERT INTO W.Stimme (stimmeId, gueltig) SELECT i, true from generate_series(1, %s) g(i)', 
-        (sum([sum(k.erststimmen.values()) for k in kandidaten]), )
-    )
     values = []
     start = 1
     for k in kandidaten:
@@ -205,7 +202,7 @@ def generate_erststimmen(connection, kandidaten, stimmkreise=None):
             start = end + 1
     psycopg2.extras.execute_batch(
         cur,
-        'INSERT INTO W.Erststimme (stimmeId, kandidat, landtagswahl) SELECT i, %s as kandidat, %s as landtagswahl from generate_series(%s, %s) g(i)',
+        'INSERT INTO W.Erststimme (stimmeId, kandidat, landtagswahl, gueltig) SELECT i, %s as kandidat, %s as landtagswahl, true from generate_series(%s, %s) g(i)',
         values
     )
     cur.close()
@@ -230,36 +227,10 @@ def generate_zweitstimmen(connection, kandidaten, stimmkreise=None):
         'INSERT INTO tmp_agg_zweitstimmen VALUES %s',
         [(k.persNr, k.landtagswahl, stimmkreis, anzahl) for k in kandidaten for stimmkreis, anzahl in k.zweitstimmen.items()]
     )
-
-    cur.execute(
-        """
-        insert into w.stimme 
-        select 
-            i, true 
-        from 
-            generate_series(
-                (select count(*) from w.erststimme) + 1, 
-                (select count(*) from w.erststimme) + 1 + (select sum(taz.anzahl) from tmp_agg_zweitstimmen taz)
-            ) g(i)
-        """
-    )
-    cur.execute(
-        """
-        insert into w.zweitstimme
-        select (row_number() over () + (select count(*) from w.erststimme)), s.wahlkreisname, s.nummer, taz.landtagswahl
-        from 
-            tmp_agg_zweitstimmen taz, 
-            generate_series(1, (
-                select anzahl from tmp_agg_zweitstimmen taz2 where taz2.persnr = taz.persnr and taz2.landtagswahl = taz.landtagswahl and taz2.stimmkreisnr = taz.stimmkreisnr 
-            )),
-            w.stimmkreis s
-        where s.landtagswahl = taz.landtagswahl and s.nummer = taz.stimmkreisnr
-        """
-    )
     cur.execute(
         """
         insert into w.zweitstimmekandidat 
-        select (row_number() over () + (select count(*) from w.erststimme)), taz.persnr, taz.landtagswahl 
+        select (row_number() over () + (select count(*) from w.erststimme)), taz.persnr, taz.landtagswahl, true 
         from 
             tmp_agg_zweitstimmen taz, 
             generate_series(1, (
@@ -272,22 +243,58 @@ def generate_zweitstimmen(connection, kandidaten, stimmkreise=None):
 
     cur.close()
 
-if __name__ == "__main__":
-    ergebnis_xml_path = '2013Ergebnisse_final.xml'
-    info_xml_path = '2013AllgemeineInformationen.xml'
+def modify_index(connection, schema, indisready):
+    cur = connection.cursor()
+    cur.execute(
+        """
+        UPDATE pg_index
+        SET indisready={}
+        WHERE indrelid = (
+            SELECT oid
+            FROM pg_class
+            WHERE relname='{}'
+        );
+        """.format(indisready, schema)
+    )
 
-    print(datetime.now(), 'Parsing...')
-    wahlkreise = parse_wahlkreise(2013)
-    stimmkreise = parse_stimmkreise(info_xml_path, 2013)
-    parteien = parse_parteien(ergebnis_xml_path, 2013)
-    kandidaten = parse_kandidaten(ergebnis_xml_path, 2013)
+    if indisready == 'true':
+        cur.execute("REINDEX TABLE {};".format(schema))
+        
+    cur.close()
 
+def modify_constraints(connection, schema, enable):
+    cur = connection.cursor()
+    action = 'ENABLE' if enable else 'DISABLE'
+    cur.execute("ALTER TABLE {} {} TRIGGER ALL;".format(schema, action))        
+    cur.close()
+
+def disable_checks(connection, *argv):
+    for schema in argv:
+        print(datetime.now(), 'Disabling index/checks for: {}'.format(schema))
+        modify_constraints(connection, schema, False)
+        modify_index(connection, schema, 'false')
+
+def enable_checks(connection, *argv):
+    for schema in argv:
+        print(datetime.now(), 'Enabling index/checks for: {}'.format(schema))
+        modify_constraints(connection, schema, True)
+        modify_index(connection, schema, 'true')
+
+def import_year(year):
     print(datetime.now(), 'Connecting...')
     conn = psycopg2.connect("dbname=postgres user=postgres password=postgres")
 
+    ergebnis_xml_path = '{}Ergebnisse_final.xml'.format(year)
+    info_xml_path = '{}AllgemeineInformationen.xml'.format(year)
+
+    print(datetime.now(), 'Parsing...')
+    wahlkreise = parse_wahlkreise(year)
+    stimmkreise = parse_stimmkreise(info_xml_path, year)
+    parteien = parse_parteien(ergebnis_xml_path, year)
+    kandidaten = parse_kandidaten(ergebnis_xml_path, year)
 
     print(datetime.now(), 'Inserting Landtagswahl...')
-    insert_landtagswahl(conn, 2013)
+    insert_landtagswahl(conn, year)
     
     print(datetime.now(), 'Inserting Wahlkreise...')
     insert_wahlkreise(conn, wahlkreise)
@@ -300,6 +307,8 @@ if __name__ == "__main__":
     
     print(datetime.now(), 'Inserting Kandidaten...')
     insert_kandidaten(conn, kandidaten)
+
+    disable_checks(conn, 'W.ZweitstimmeKandidat', 'W.ZweitstimmePartei', 'W.Erststimme')
     
     print(datetime.now(), 'Generating Erststimmen (slow)...')
     generate_erststimmen(conn, kandidaten)
@@ -307,7 +316,16 @@ if __name__ == "__main__":
     print(datetime.now(), 'Generating Zweitstimmen (also slow but in DB)...')
     generate_zweitstimmen(conn, kandidaten)
 
-    print(datetime.now())
+    enable_checks(conn, 'W.ZweitstimmeKandidat', 'W.ZweitstimmePartei', 'W.Erststimme')
     
     conn.commit()
     conn.close()
+
+if __name__ == "__main__":
+    print(datetime.now(), 'Importing 2013...')
+    import_year(2013)
+    
+    print(datetime.now(), 'Importing 2018...')
+    import_year(2018)
+
+    print(datetime.now())

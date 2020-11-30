@@ -2,8 +2,14 @@ version: '3'
 
 services:
   db:
-    image: supabase/postgres
+    image: postgres
     ports:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: postgres
+    entrypoint: /override-docker-entrypoint.sh
+    volumes:
+      - "./database/Wahlinformationssystem-Schema.sql:/docker-entrypoint-initdb.d/00-init-schema.sql"
+      - "./01-populate-db.sh:/docker-entrypoint-initdb.d/01-populate-db.sh"
+      - "./database:/database"
+      - "./docker-entrypoint.sh:/override-docker-entrypoint.sh"
