@@ -27,7 +27,7 @@ CREATE TABLE W.Stimmkreis (
     landtagswahl int not null,
     stimmkreisname varchar(255) not null,
     stimmberechtigte int not null,
-    primary key (nummer, wahlkreisname, landtagswahl),
+    primary key (nummer, landtagswahl),
     foreign key (wahlkreisname, landtagswahl) references W.Wahlkreis (wahlkreisname, landtagswahl)
 );
 
@@ -45,11 +45,11 @@ CREATE TABLE W.Kandidat (
     direktkandidatInStimmkreis int,
     primary key (persNr, landtagswahl),
     foreign key (landtagswahl, listenkandidatInWahlkreis) references W.Wahlkreis(landtagswahl, wahlkreisname),
-    foreign key (direktkandidatInStimmkreis, listenkandidatInWahlkreis, landtagswahl) references W.Stimmkreis (nummer, wahlkreisname, landtagswahl)
+    foreign key (direktkandidatInStimmkreis, landtagswahl) references W.Stimmkreis (nummer, landtagswahl)
 );
 
 CREATE TABLE W.ZweitstimmeKandidat (
-    stimmeId int not null,
+    stimmeId SERIAL primary key,
     kandidat int not null,
     landtagswahl int not null,
     gueltig bool not null,
@@ -57,13 +57,16 @@ CREATE TABLE W.ZweitstimmeKandidat (
 );
 
 CREATE TABLE W.ZweitstimmePartei (
-    stimmeId int not null,
+    stimmeId SERIAL primary key,
+    landtagswahl int not null,
+    wahlkreisname varchar(255) not null,
+    partei varchar(255) not null references W.Partei,
     gueltig bool not null,
-    partei varchar(255) not null references W.Partei
+    foreign key (wahlkreisname, landtagswahl) references W.Wahlkreis (wahlkreisname, landtagswahl)
 );
 
 CREATE TABLE W.Erststimme (
-    stimmeId int not null,
+    stimmeId SERIAL primary key,
     kandidat int not null,
     landtagswahl int not null,
     gueltig bool not null,

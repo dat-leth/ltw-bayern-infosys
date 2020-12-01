@@ -37,6 +37,7 @@ class Partei:
     parteiname: str
     landtagswahl: int
     zweitstimmenPartei: dict # StimmkreisNummer -> Anzahl
+    zweitstimmenWahlkreis: dict # Gesammtzahl Zweitstimmen pro Wahlkreis
 
 
 def get_wahlkreisname(stimmkreisnr):
@@ -100,14 +101,30 @@ def parse_stimmkreise(info_xml_path, jahr):
     
     return stimmkreise
 
-def parse_parteien(ergebnis_xml_path, jahr):
-    root = ET.parse(ergebnis_xml_path).getroot()
-    parteinamen = {i.findtext('Name').strip() for i in root.findall('.//Partei')}
-    parteien = {n: Partei(n, jahr, {}) for n in parteinamen}
+def parse_parteien(ergebnis_xml_path, info_xml_path, wahlkreise, jahr):
+    rootErgebnis = ET.parse(ergebnis_xml_path).getroot()
+    rootInfo = ET.parse(info_xml_path).getroot()
+    parteinamen = {i.findtext('Name').strip() for i in rootErgebnis.findall('.//Partei')}
+    parteien = {n: Partei(n, jahr, {}, {}) for n in parteinamen}
 
-    for partei in root.findall('.//Partei'):
+    for partei in rootErgebnis.findall('.//Partei'):
+        name = partei.findtext('Name').strip()
+
+        for wahlkreis in wahlkreise:
+            zweitStimmen = []
+            
+            if jahr == 2013:
+                zweitStimmen = rootInfo.findtext('.//Allgemeine_Angaben[Name_der_Regionaleinheit="{}"]/../Wahlvorschlaege/Wahlvorschlag[Name="{}"]/Zweitstimmen_der_aktuellen_Wahl'.format(wahlkreis.name, name))
+            else:
+                zweitStimmen = rootInfo.findtext('.//Allgemeine_Angaben[Name_der_Regionaleinheit="{}"]/../Wahlvorschläge/Wahlvorschlag[Name="{}"]/Zweitstimmen_der_aktuellen_Wahl'.format(wahlkreis.name, name))
+            
+            # this happens if a partei does not have zweitstimmen
+            if zweitStimmen is not None and zweitStimmen != 'X':
+                parteien[name].zweitstimmenWahlkreis[wahlkreis.name] = int(zweitStimmen)
+
         for stimmkreis in partei.findall('.//Stimmkreis'):
-            parteien[partei.findtext('Name').strip()].zweitstimmenPartei[int(stimmkreis.findtext('NrSK'))] = int(stimmkreis.findtext('ZweitSohneKandidat'))
+            parteien[name].zweitstimmenPartei[int(stimmkreis.findtext('NrSK'))] = int(stimmkreis.findtext('ZweitSohneKandidat'))
+
     return list(parteien.values())
 
 def parse_kandidaten(ergebnis_xml_path, jahr):
@@ -183,39 +200,49 @@ def insert_kandidaten(connection, kandidaten):
     )
     cur.close()
 
-def generate_erststimmen(connection, kandidaten, stimmkreise=None):
+def generate_erststimmen(connection, kandidaten, year, stimmkreise=None):
     if stimmkreise is not None:
         kandidaten = [k for k in kandidaten if k.direktkandidatInStimmkreis in stimmkreise]
-    # create temp table erststimme (kandidat, landtagswahl, anzahlerststimmen)
-    # create temp table zweitstimme (kandidat, landtagswahl, stimmkreis, wahlkreis, anzahl)
+        
     cur = connection.cursor()
-    values = []
-    start = 1
-    for k in kandidaten:
-        if sum(k.erststimmen.values()) > 0:
-            end = start - 1 + sum(k.erststimmen.values())
-            values.append((k.persNr, k.landtagswahl, start, end))
-            # cur.execute(
-            #     'INSERT INTO W.Erststimme (stimmeId, kandidat, landtagswahl) SELECT i, %s as kandidat, %s as landtagswahl from generate_series(%s, %s) g(i)',
-            #     (k.persNr, k.landtagswahl, start, end)
-            # )
-            start = end + 1
-    psycopg2.extras.execute_batch(
-        cur,
-        'INSERT INTO W.Erststimme (stimmeId, kandidat, landtagswahl, gueltig) SELECT i, %s as kandidat, %s as landtagswahl, true from generate_series(%s, %s) g(i)',
-        values
+
+    cur.execute(
+        """
+        CREATE TEMP TABLE tmp_agg_erststimmen (
+            persNr int not null,
+            anzahl int not null
+        )
+        ON COMMIT DELETE ROWS
+        """
     )
+    psycopg2.extras.execute_values(
+        cur,
+        'INSERT INTO tmp_agg_erststimmen VALUES %s',
+        [(k.persNr, sum(k.erststimmen.values())) for k in kandidaten]
+    )
+    cur.execute(
+        """
+        INSERT INTO w.erststimme(kandidat, landtagswahl, gueltig)
+        SELECT tae.persnr, {} as landtagswahl, true AS gueltig
+        FROM 
+            tmp_agg_erststimmen tae,
+            generate_series(1, tae.anzahl)
+        """.format(year)
+    )
+
     cur.close()
 
-def generate_zweitstimmen(connection, kandidaten, stimmkreise=None):
+def generate_zweitstimmen(connection, kandidaten, parteien, year, stimmkreise=None):
     if stimmkreise is not None:
         kandidaten = [k for k in kandidaten if k.direktkandidatInStimmkreis in stimmkreise]
+
     cur = connection.cursor()
+
+    # Generate Zweitstimmen für Listenkandidaten
     cur.execute(
         """
         CREATE TEMP TABLE tmp_agg_zweitstimmen (
             persNr int not null,
-            landtagswahl int not null,
             stimmkreisnr int not null,
             anzahl int not null
         )
@@ -225,20 +252,66 @@ def generate_zweitstimmen(connection, kandidaten, stimmkreise=None):
     psycopg2.extras.execute_values(
         cur,
         'INSERT INTO tmp_agg_zweitstimmen VALUES %s',
-        [(k.persNr, k.landtagswahl, stimmkreis, anzahl) for k in kandidaten for stimmkreis, anzahl in k.zweitstimmen.items()]
+        [(k.persNr, stimmkreis, anzahl) for k in kandidaten for stimmkreis, anzahl in k.zweitstimmen.items()]
     )
     cur.execute(
         """
-        insert into w.zweitstimmekandidat 
-        select (row_number() over () + (select count(*) from w.erststimme)), taz.persnr, taz.landtagswahl, true 
-        from 
-            tmp_agg_zweitstimmen taz, 
-            generate_series(1, (
-                select anzahl from tmp_agg_zweitstimmen taz2 where taz2.persnr = taz.persnr and taz2.landtagswahl = taz.landtagswahl and taz2.stimmkreisnr = taz.stimmkreisnr 
-            )),
-            w.stimmkreis s
-        where s.landtagswahl = taz.landtagswahl and s.nummer = taz.stimmkreisnr 
+        INSERT INTO w.zweitstimmekandidat(kandidat, landtagswahl, gueltig)
+        SELECT taz.persnr, {} as landtagswahl, true AS gueltig
+        FROM 
+            tmp_agg_zweitstimmen taz,
+            generate_series(1, taz.anzahl)
+        """.format(year)
+    )
+    
+    # Generate Zweitstimmen für Parteien
+    cur.execute(
         """
+        CREATE TEMP TABLE tmp_zweitstimmen_partei_wahlkreis (
+            partei varchar(255) not null,
+            wahlkreisname varchar(255) not null,
+            total int not null
+        )
+        ON COMMIT DELETE ROWS
+        """
+    )
+    psycopg2.extras.execute_values(
+        cur,
+        'INSERT INTO tmp_zweitstimmen_partei_wahlkreis VALUES %s',
+        [(p.parteiname, wahlkreis, total) for p in parteien for wahlkreis, total in p.zweitstimmenWahlkreis.items()]
+    )
+    cur.execute(
+        """
+        INSERT INTO w.zweitstimmepartei(landtagswahl, wahlkreisname, partei, gueltig)
+        WITH
+        ZweitstimmenAufListenkandidaten_pro_WahlkreisPartei AS (
+            SELECT s.wahlkreisname, k.partei, SUM(zwk.anzahl) as anzahl
+            FROM tmp_agg_zweitstimmen zwk
+            LEFT JOIN w.stimmkreis s
+                ON  s.nummer = zwk.stimmkreisnr
+                AND s.landtagswahl = {0}
+            LEFT JOIN w.kandidat k
+                ON  k.landtagswahl = {0}
+                AND k.persnr = zwk.persNr
+            GROUP BY s.wahlkreisname, k.partei
+        ),
+        ZweitstimmenTotal_pro_WahlkreisPartei AS (
+            SELECT zwp.partei, zwp.wahlkreisname, zwp.total
+            FROM tmp_zweitstimmen_partei_wahlkreis zwp
+        ),
+        FehlendeZweitstimmen AS (
+            SELECT k.wahlkreisname, k.partei, SUM(p.total - k.anzahl) AS StimmenOhneKandidat
+            FROM ZweitstimmenAufListenkandidaten_pro_WahlkreisPartei k,
+                ZweitstimmenTotal_pro_WahlkreisPartei p
+            WHERE k.partei = p.partei
+            AND k.wahlkreisname = p.wahlkreisname
+            GROUP BY k.wahlkreisname, k.partei
+        )
+        SELECT {0} as landtagswahl, f.wahlkreisname, f.partei, true as gueltig
+        FROM
+            FehlendeZweitstimmen f,
+            generate_series(1, f.StimmenOhneKandidat);
+        """.format(year)
     )
 
     cur.close()
@@ -290,7 +363,7 @@ def import_year(year):
     print(datetime.now(), 'Parsing...')
     wahlkreise = parse_wahlkreise(year)
     stimmkreise = parse_stimmkreise(info_xml_path, year)
-    parteien = parse_parteien(ergebnis_xml_path, year)
+    parteien = parse_parteien(ergebnis_xml_path, info_xml_path, wahlkreise, year)
     kandidaten = parse_kandidaten(ergebnis_xml_path, year)
 
     print(datetime.now(), 'Inserting Landtagswahl...')
@@ -311,10 +384,10 @@ def import_year(year):
     disable_checks(conn, 'W.ZweitstimmeKandidat', 'W.ZweitstimmePartei', 'W.Erststimme')
     
     print(datetime.now(), 'Generating Erststimmen (slow)...')
-    generate_erststimmen(conn, kandidaten)
+    generate_erststimmen(conn, kandidaten, year)
     
     print(datetime.now(), 'Generating Zweitstimmen (also slow but in DB)...')
-    generate_zweitstimmen(conn, kandidaten)
+    generate_zweitstimmen(conn, kandidaten, parteien, year)
 
     enable_checks(conn, 'W.ZweitstimmeKandidat', 'W.ZweitstimmePartei', 'W.Erststimme')
     
