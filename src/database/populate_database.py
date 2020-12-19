@@ -18,6 +18,7 @@ class Stimmkreis:
     landtagswahl: int
     stimmkreisname: str
     stimmberechtigte: int
+    waehler: int
 
 
 @dataclass
@@ -96,7 +97,8 @@ def parse_stimmkreise(info_xml_path, jahr):
             wahlkreisname = get_wahlkreisname(nummer),
             landtagswahl = jahr,
             stimmkreisname = regionaleinheit.findtext('Allgemeine_Angaben/Name_der_Regionaleinheit').strip(),
-            stimmberechtigte = int(regionaleinheit.findtext('Allgemeine_Angaben/Stimmberechtigte'))
+            stimmberechtigte = int(regionaleinheit.findtext('Allgemeine_Angaben/Stimmberechtigte')),
+            waehler = int(regionaleinheit.findtext('Allgemeine_Angaben/Waehler'))
         ))
 
     return stimmkreise
@@ -164,8 +166,8 @@ def insert_stimmkreise(connection, stimmkreise):
     cur = connection.cursor()
     psycopg2.extras.execute_values(
         cur,
-        'INSERT INTO W.Stimmkreis (nummer, wahlkreisname, landtagswahl, stimmkreisname, stimmberechtigte) VALUES %s',
-        [(s.nummer, s.wahlkreisname, s.landtagswahl, s.stimmkreisname, s.stimmberechtigte) for s in stimmkreise]
+        'INSERT INTO W.Stimmkreis (nummer, wahlkreisname, landtagswahl, stimmkreisname, stimmberechtigte, waehler) VALUES %s',
+        [(s.nummer, s.wahlkreisname, s.landtagswahl, s.stimmkreisname, s.stimmberechtigte, s.waehler) for s in stimmkreise]
     )
     cur.close()
 

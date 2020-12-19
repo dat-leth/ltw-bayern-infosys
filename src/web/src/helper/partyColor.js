@@ -7,7 +7,7 @@ const COLORS = {
     'FDP': '#ffed00'
 };
 
-export const getPartyColor = party => (COLORS[party.toLocaleUpperCase()]);
+export const getPartyColor = party => (COLORS[party.toLocaleUpperCase()] || '#ddd');
 
 export class PARTEI_COLOR {
 }

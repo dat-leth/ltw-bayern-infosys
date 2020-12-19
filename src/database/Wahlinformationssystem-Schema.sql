@@ -27,6 +27,7 @@ CREATE TABLE W.Stimmkreis (
     landtagswahl int not null,
     stimmkreisname varchar(255) not null,
     stimmberechtigte int not null,
+    waehler int not null,
     primary key (nummer, landtagswahl),
     foreign key (wahlkreisname, landtagswahl) references W.Wahlkreis (wahlkreisname, landtagswahl)
 );

@@ -31,6 +31,10 @@ services:
       - "./database/VIEW_ErststimmenProKandidatUndStimmkreis.sql:/docker-entrypoint-initdb.d/20-create-view-erststimmenprokandidatundstimmkreis.sql"
       - "./database/VIEW_StimmenProWahlkreis.sql:/docker-entrypoint-initdb.d/30-create-view-stimmenprowahlkreis.sql"
       - "./database/VIEW_Sitzplatzverteilung.sql:/docker-entrypoint-initdb.d/40-create-view-sitzplatzverteilung.sql"
+      - "./database/VIEW_StimmenProStimmkreis.sql:/docker-entrypoint-initdb.d/50-create-view-stimmenprostimmkreis.sql"
+      - "./database/VIEW_StimmenProParteiStimmkreis.sql:/docker-entrypoint-initdb.d/60-create-view-stimmenproparteistimmkreis.sql"
+      - "./database/VIEW_StimmkreisSiegerPartei.sql:/docker-entrypoint-initdb.d/70-create-view-stimmkreissiegerpartei.sql"
+      - "./database/VIEW_StimmkreisVergleichVorjahr.sql:/docker-entrypoint-initdb.d/80-create-view-stimmkreisvergleichvorjahr.sql"
       - "./database:/database"
       - "./scripts/docker-entrypoint.sh:/override-docker-entrypoint.sh"
 networks:
