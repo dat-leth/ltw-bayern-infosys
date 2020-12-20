@@ -41,6 +41,9 @@ function SideNavigation(props) {
                 <Link href={'/gewaehlte'} color="textPrimary" variant="subtitle1">Gewählte</Link>
             </ListItem>
             <ListItem>
+                <Link href={'/knapp'} color="textPrimary" variant="subtitle1">Knappste Siege/Verluste</Link>
+            </ListItem>
+            <ListItem>
                 <Link href={'/bruttobedarf'} color="textPrimary" variant="subtitle1">Brutto Bedarf</Link>
             </ListItem>
         </List>
