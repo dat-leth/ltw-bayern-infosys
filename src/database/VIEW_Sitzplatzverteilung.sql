@@ -1,3 +1,4 @@
+CREATE VIEW w.Sitzplatzverteilung(landtagswahl, wahlkreis, partei, ausgleich, sitze, gesamt, ueberhang, minsitze) AS
 WITH RECURSIVE
     -- Alle (gültigen) Stimmen (Erst + Zweitstimme) die eine Partei pro Landtagswahl gesammelt hat.
 StimmenProPartei(partei, landtagswahl, anzahl) AS(
@@ -124,8 +125,8 @@ SitzeProWahlkreisKorrigiert(wahlkreis, landtagswahl, sitze) AS (
      -- Der Ausgangspunkt für die rekursive cte.
      -- Hier wird das "normale" Sitzplatzergebnis um die Sitze pro Wahlkreis erweitert
      -- MinProPartei deshlab, da jede Partei nach hinzufügen von Ausgleichsmandaten mindestens diese Anzahl an Sitzen erhalten soll
-MinProPartei(partei, wahlkreis, landtagswahl, gesamt, sitze) AS (
-    SELECT u.partei, u.wahlkreis, u.landtagswahl, u.gesamt, s.sitze
+MinProPartei(partei, wahlkreis, landtagswahl, gesamt, sitze, ueberhang) AS (
+    SELECT u.partei, u.wahlkreis, u.landtagswahl, u.gesamt, s.sitze, u.ueberhang
     FROM UeberhandMandate u
     INNER JOIN SitzeProWahlkreisKorrigiert s
         ON s.landtagswahl = u.landtagswahl
@@ -137,15 +138,15 @@ MinProPartei(partei, wahlkreis, landtagswahl, gesamt, sitze) AS (
      -- Abort wird gesetzt, wenn in einem Wahlkreis jede Partei mindestens die Zahl an Sitze wie in 'MinProPartei' erhalten hat
      -- Es kommt also immer ein ganzer Wahlkreis 'weiter' wenn er Parteien enthält,
      --  die durch die Ausgleichsmandate weniger Sitze erhalten haben als ihnen zustehen würden
-Ausgleichsmandate(partei, wahlkreis, landtagswahl, ausgleich, gesamt, sitze, abort) AS (
-    SELECT m.partei, m.wahlkreis, m.landtagswahl, -1 as ausgleich, m.gesamt, m.sitze - 1, false
+Ausgleichsmandate(partei, wahlkreis, landtagswahl, ausgleich, gesamt, sitze, ueberhang, minsitze, abort) AS (
+    SELECT m.partei, m.wahlkreis, m.landtagswahl, -1 as ausgleich, m.gesamt, m.sitze - 1, m.ueberhang, m.gesamt, false
     FROM MinProPartei m
     UNION ALL (
         WITH
              -- Schlüssel von AusgleichUndSitzePlusOne = {Partei, Wahlkreis, Landtagswahl}
              -- Der nachfolgende Teil ist analog zur "Basis" Berechnung ohne
-        _AusgleichUndSitzePlusOne(partei, wahlkreis, landtagswahl, ausgleich, gesamt, sitze, abort) AS (
-            SELECT a.partei, a.wahlkreis, a.landtagswahl, a.ausgleich + 1, a.gesamt, a.sitze + 1, a.abort FROM Ausgleichsmandate a
+        _AusgleichUndSitzePlusOne(partei, wahlkreis, landtagswahl, ausgleich, gesamt, sitze, ueberhang, minsitze, abort) AS (
+            SELECT a.partei, a.wahlkreis, a.landtagswahl, a.ausgleich + 1, a.gesamt, a.sitze + 1, a.ueberhang, a.minsitze, a.abort FROM Ausgleichsmandate a
         ),
              -- Analog Anteile
         _Anteile(partei, wahlkreis, landtagswahl, anzahl, anteil, ganzzahlig, rest) AS (
@@ -185,7 +186,7 @@ Ausgleichsmandate(partei, wahlkreis, landtagswahl, ausgleich, gesamt, sitze, abo
                 ON n.wahlkreis = a.wahlkreis
                 AND n.landtagswahl = a.landtagswahl
         )
-        SELECT ap1.partei, ap1.wahlkreis, ap1.landtagswahl, ap1.ausgleich, s.gesamt, ap1.sitze, NOT EXISTS (
+        SELECT ap1.partei, ap1.wahlkreis, ap1.landtagswahl, ap1.ausgleich, s.gesamt, ap1.sitze, ap1.ueberhang, ap1.minsitze, NOT EXISTS (
             SELECT *
             FROM MinProPartei m
             INNER JOIN _SitzeMitRest s2
@@ -214,11 +215,11 @@ MaxAusgleichsmandateProWahlkreis(landtagswahl, wahlkreis, maxAusgleich) AS (
      -- Bereinigung der Ergebnisse, die nicht die maximale Anzahl Ausgleichsmandate pro Wahlkreis haben
      -- (Die sind während der Rekursion entstanden werden aber nicht benötigt)
 Ergebnis AS (
-    SELECT a.landtagswahl, a.wahlkreis, a.partei, a.gesamt
+    SELECT a.landtagswahl, a.wahlkreis, a.partei, a.ausgleich, a.sitze, a.gesamt, a.ueberhang, a.minsitze
     FROM Ausgleichsmandate a
     INNER JOIN MaxAusgleichsmandateProWahlkreis m
         ON m.landtagswahl = a.landtagswahl
         AND m.wahlkreis = a.wahlkreis
         AND m.maxAusgleich = a.ausgleich
 )
-SELECT * FROM Ergebnis s WHERE s.landtagswahl = 2018;
+SELECT * FROM Ergebnis s;

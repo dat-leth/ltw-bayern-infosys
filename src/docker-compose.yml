@@ -1,15 +1,47 @@
 version: '3'
 
 services:
+  server:
+    image: postgrest/postgrest
+    ports:
+      - "3030:3000"
+    networks:
+      w:
+    links:
+      - db:db
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
+      PGRST_DB_SCHEMA: w
+      PGRST_DB_ANON_ROLE: postgres # In production this role should not be the same as the one used for the connection
+      PGRST_SERVER_PROXY_URI: "http://127.0.0.1:3030"
+    depends_on:
+      - db
   db:
     image: supabase/postgres
     ports:
       - "5432:5432"
+    networks:
+      w:
     environment:
       POSTGRES_PASSWORD: postgres
     entrypoint: /override-docker-entrypoint.sh
     volumes:
       - "./database/Wahlinformationssystem-Schema.sql:/docker-entrypoint-initdb.d/00-init-schema.sql"
-      - "./01-populate-db.sh:/docker-entrypoint-initdb.d/01-populate-db.sh"
+      - "./scripts/10-populate-db.sh:/docker-entrypoint-initdb.d/010-populate-db.sh"
+      - "./database/VIEW_ErststimmenProKandidatUndStimmkreis.sql:/docker-entrypoint-initdb.d/020-create-view-erststimmenprokandidatundstimmkreis.sql"
+      - "./database/VIEW_StimmenProWahlkreis.sql:/docker-entrypoint-initdb.d/030-create-view-stimmenprowahlkreis.sql"
+      - "./database/VIEW_Sitzplatzverteilung.sql:/docker-entrypoint-initdb.d/040-create-view-sitzplatzverteilung.sql"
+      - "./database/VIEW_StimmenProStimmkreis.sql:/docker-entrypoint-initdb.d/050-create-view-stimmenprostimmkreis.sql"
+      - "./database/VIEW_StimmenProParteiStimmkreis.sql:/docker-entrypoint-initdb.d/060-create-view-stimmenproparteistimmkreis.sql"
+      - "./database/VIEW_StimmkreisSiegerPartei.sql:/docker-entrypoint-initdb.d/070-create-view-stimmkreissiegerpartei.sql"
+      - "./database/VIEW_StimmkreisVergleichVorjahr.sql:/docker-entrypoint-initdb.d/080-create-view-stimmkreisvergleichvorjahr.sql"
+      - "./database/VIEW_Gewaehlte.sql:/docker-entrypoint-initdb.d/090-create-view-gewaehlte.sql"
+      - "./database/VIEW_Knapp.sql:/docker-entrypoint-initdb.d/100-create-view-knapp.sql"
+      - "./database/Import_Gemeinden_Kreise.sql:/docker-entrypoint-initdb.d/110-import-gemeinden-kreise.sql"
+      - "./database/Import_Netto_Brutto_Bedarf.sql:/docker-entrypoint-initdb.d/120-import-netto-brutto-bedarf.sql"
+      - "./database/VIEW_ProzentProBruttoBedarf.sql:/docker-entrypoint-initdb.d/130-create-view-prozent-pro-brutto-bedarf.sql"
+      - "./database/Import_Auslaenderquote.sql:/docker-entrypoint-initdb.d/140-import-auslaenderquote.sql"
       - "./database:/database"
-      - "./docker-entrypoint.sh:/override-docker-entrypoint.sh"
+      - "./scripts/docker-entrypoint.sh:/override-docker-entrypoint.sh"
+networks:
+  w:
