@@ -40,6 +40,9 @@ function SideNavigation(props) {
             <ListItem>
                 <Link href={'/gewaehlte'} color="textPrimary" variant="subtitle1">Gewählte</Link>
             </ListItem>
+            <ListItem>
+                <Link href={'/bruttobedarf'} color="textPrimary" variant="subtitle1">Brutto Bedarf</Link>
+            </ListItem>
         </List>
     </Drawer>;
 }
