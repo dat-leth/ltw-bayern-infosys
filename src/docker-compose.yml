@@ -37,6 +37,7 @@ services:
       - "./database/VIEW_StimmkreisVergleichVorjahr.sql:/docker-entrypoint-initdb.d/080-create-view-stimmkreisvergleichvorjahr.sql"
       - "./database/VIEW_Gewaehlte.sql:/docker-entrypoint-initdb.d/090-create-view-gewaehlte.sql"
       - "./database/VIEW_Knapp.sql:/docker-entrypoint-initdb.d/100-create-view-knapp.sql"
+      - "./database/Import_Gemeinden_Kreise.sql:/docker-entrypoint-initdb.d/110-import-gemeinden-kreise.sql"
       - "./database:/database"
       - "./scripts/docker-entrypoint.sh:/override-docker-entrypoint.sh"
 networks:
