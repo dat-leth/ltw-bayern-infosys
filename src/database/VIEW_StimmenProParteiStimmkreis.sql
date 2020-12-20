@@ -17,7 +17,7 @@ CREATE VIEW w.StimmenProParteiStimmkreis(landtagswahl, partei, stimmkreis, zweit
             AND k.persnr = s.kandidat
         GROUP BY s.landtagswahl, k.partei, k.direktkandidatinstimmkreis
     ), StimmenProParteiStimmkreis(landtagswahl, partei, stimmkreis, zweitstimmen, erstimmen) AS (
-        SELECT z.landtagswahl, z.partei, z.stimmkreis, SUM(z.anzahl) as Zweitstimmen, SUM(e.anzahl) as Erststimmen
+        SELECT z.landtagswahl, z.partei, z.stimmkreis, SUM(z.anzahl) as Zweitstimmen, e.anzahl as Erststimmen
         FROM w.stimmkreis s
         LEFT JOIN ZweitstimmenProPartei z
             ON z.landtagswahl = s.landtagswahl
@@ -26,6 +26,6 @@ CREATE VIEW w.StimmenProParteiStimmkreis(landtagswahl, partei, stimmkreis, zweit
             ON z.landtagswahl = e.landtagswahl
             AND z.stimmkreis = e.stimmkreis
             AND z.partei = e.partei
-        GROUP BY z.landtagswahl, z.partei, z.stimmkreis
+        GROUP BY z.landtagswahl, z.partei, z.stimmkreis, e.anzahl
     )
     SELECT * FROM StimmenProParteiStimmkreis s;

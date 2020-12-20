@@ -46,6 +46,9 @@ function SideNavigation(props) {
             <ListItem>
                 <Link href={'/bruttobedarf'} color="textPrimary" variant="subtitle1">Brutto Bedarf</Link>
             </ListItem>
+            <ListItem>
+                <Link href={'/auslaenderafd'} color="textPrimary" variant="subtitle1">Ausländeranteil vs. AfD-Gesamtstimmenanteil</Link>
+            </ListItem>
         </List>
     </Drawer>;
 }

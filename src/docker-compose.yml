@@ -40,6 +40,7 @@ services:
       - "./database/Import_Gemeinden_Kreise.sql:/docker-entrypoint-initdb.d/110-import-gemeinden-kreise.sql"
       - "./database/Import_Netto_Brutto_Bedarf.sql:/docker-entrypoint-initdb.d/120-import-netto-brutto-bedarf.sql"
       - "./database/VIEW_ProzentProBruttoBedarf.sql:/docker-entrypoint-initdb.d/130-create-view-prozent-pro-brutto-bedarf.sql"
+      - "./database/Import_Auslaenderquote.sql:/docker-entrypoint-initdb.d/140-import-auslaenderquote.sql"
       - "./database:/database"
       - "./scripts/docker-entrypoint.sh:/override-docker-entrypoint.sh"
 networks:
