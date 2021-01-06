@@ -44,7 +44,13 @@ function SideNavigation(props) {
                 <Link href={'/knapp/2018'} color="textPrimary" variant="subtitle1">Knappste Sieger/Verlierer</Link>
             </ListItem>
             <ListItem>
+                <Link href={'/knapp'} color="textPrimary" variant="subtitle1">Knappste Siege/Verluste</Link>
+            </ListItem>
+            <ListItem>
                 <Link href={'/bruttobedarf'} color="textPrimary" variant="subtitle1">Brutto Bedarf</Link>
+            </ListItem>
+            <ListItem>
+                <Link href={'/auslaenderafd'} color="textPrimary" variant="subtitle1">Ausländeranteil vs. AfD-Gesamtstimmenanteil</Link>
             </ListItem>
         </List>
     </Drawer>;
