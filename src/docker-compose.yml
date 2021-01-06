@@ -25,6 +25,7 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     entrypoint: /override-docker-entrypoint.sh
+    shm_size: '2gb'
     volumes:
       - "./database/Wahlinformationssystem-Schema.sql:/docker-entrypoint-initdb.d/00-init-schema.sql"
       - "./scripts/10-populate-db.sh:/docker-entrypoint-initdb.d/010-populate-db.sh"
