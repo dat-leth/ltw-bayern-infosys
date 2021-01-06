@@ -13,6 +13,7 @@ import {
 import {groupBy} from "../src/helper/groupBy";
 import {Doughnut} from "react-chartjs-2";
 import {getPartyColor} from "../src/helper/partyColor";
+import {loadData} from "../src/helper/serverSide";
 
 const useStyles = makeStyles(theme => ({
     table: {
@@ -34,21 +35,15 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-export default function Overview() {
+export const getServerSideProps = async () => await loadData('/sitzplatzverteilung');
+
+export default function Overview({data}) {
     const classes = useStyles();
 
-    const [wahlkreisData, setWahlkreisData] = useState();
+    const [wahlkreisData, setWahlkreisData] = useState(data);
 
     useEffect(() => {
-        fetch(process.env.NEXT_PUBLIC_BACKEND_URL + '/sitzplatzverteilung').then(resp => {
-            if (resp.ok) {
-                resp.json()
-                    .then(data => setWahlkreisData(data))
-                    .catch(err => console.error('Failed to deserialize JSON', err));
-            } else {
-                console.warn('Backend Request not successful', resp);
-            }
-        }).catch(err => console.error('Backend Request failed', err))
+        loadData('/sitzplatzverteilung', setWahlkreisData);
     }, []);
 
     useEffect(() => console.log('WahlkreisData', wahlkreisData), [wahlkreisData]);
