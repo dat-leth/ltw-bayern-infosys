@@ -1,6 +1,19 @@
-import SideNavigation from "../src/SideNavigation";
-import { makeStyles, Table, TableBody, TableCell, TableHead, TableRow, Typography, Select, InputLabel, MenuItem } from "@material-ui/core"
-import { useState, useEffect } from "react";
+import SideNavigation from "../../src/SideNavigation";
+import {
+    InputLabel,
+    makeStyles,
+    MenuItem,
+    Select,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableRow,
+    Typography
+} from "@material-ui/core"
+import React, {useEffect, useState} from "react";
+import {useRouter} from "next/router";
+import {loadData, serverSideRendering} from "../../src/helper/serverSide";
 
 
 const useStyles = makeStyles(theme => ({
@@ -23,36 +36,37 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-export default function Gewaehlte() {
-    const classes = useStyles()
+export const getServerSideProps = async (context) => await loadData(`/gewaehlte?landtagswahl=eq.${context.params.ltw}`);
 
-    const [ltw, setLtw] = useState(2018);
-    const [gewaehlteData, setGewaehlteData] = useState([]);
+export default function Gewaehlte({data}) {
+    const classes = useStyles();
+
+    const router = useRouter();
+    const {ltw} = router.query;
+
+    const [gewaehlteData, setGewaehlteData] = useState(data || []);
+
+    // update state if new data was loaded (happens on drop down change)
+    useEffect(() => setGewaehlteData(data || []), [data]);
 
     useEffect(() => {
-        fetch(process.env.NEXT_PUBLIC_BACKEND_URL + `/gewaehlte?landtagswahl=eq.${ltw}`).then(resp => {
-            if (resp.ok) {
-                resp.json()
-                    .then(data => setGewaehlteData(data))
-                    .catch(err => console.error('Failed to deserialize JSON', err));
-            } else {
-                console.warn('Backend Request not successful', resp);
-            }
-        }).catch(err => console.error('Backend Request failed', err))
+        if (ltw == null) return;
+
+        loadData(`/gewaehlte?landtagswahl=eq.${ltw}`, setGewaehlteData);
     }, [ltw]);
 
-    const handleSelect = (event) => setLtw(event.target.value)
+    const handleSelect = (event) => router.push(`/gewaehlte/${event.target.value}`);
 
     return <>
-        <SideNavigation drawerWidth={300} />
+        <SideNavigation drawerWidth={300}/>
         <div className={classes.wrapper}>
             <Typography variant="h4" color="primary">Gewählte</Typography>
             <InputLabel id="ltw-select-label">Landtagswahl</InputLabel>
-            <Select labelId="ltw-select-label" id="ltw-select" value={ltw} onChange={handleSelect}>
+            <Select labelId="ltw-select-label" id="ltw-select" value={ltw || ''} onChange={handleSelect}>
                 <MenuItem value={2018}>2018</MenuItem>
                 <MenuItem value={2013}>2013</MenuItem>
             </Select>
-            <Table>
+            <Table stickyHeader={true} size="small">
                 <TableHead>
                     <TableRow>
                         <TableCell rowSpan={2}>Name</TableCell>

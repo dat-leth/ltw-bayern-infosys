@@ -18,6 +18,7 @@ import {
 import {useRouter} from "next/router";
 import {getPartyColor} from "../../src/helper/partyColor";
 import {Doughnut} from "react-chartjs-2";
+import {clientSideRendering, loadData} from "../../src/helper/serverSide";
 
 const useStyles = makeStyles(theme => ({
     table: {
@@ -61,44 +62,44 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-export default function Stimmkreis(props) {
-    const router = useRouter()
-    const {stimmkreis} = router.query
+export const getServerSideProps = async (context) => {
+    if (clientSideRendering()) return {props: {}};
+
+    const vergleichDataUrl = `/stimmkreisvergleichvorjahr?order=prozent2018.desc&stimmkreis=eq.${context.params.stimmkreis}`;
+    const vergleichData = await loadData(vergleichDataUrl);
+
+
+    const detailDataUrl = `/stimmkreisdetails?stimmkreis=eq.${context.params.stimmkreis}&landtagswahl=eq.2018`;
+    const detailData = await loadData(detailDataUrl);
+
+    return {
+        props: {
+            preVergleichData: vergleichData.props.data,
+            preDetailData: detailData.props.data[0]
+        }
+    }
+}
+
+export default function Stimmkreis({preVergleichData, preDetailData}) {
+    const router = useRouter();
+    const {stimmkreis} = router.query;
 
     const classes = useStyles();
 
-    const [vergleichData, setVergleichData] = useState([]);
-    const [detailData, setDetailData] = useState(null);
+    const [vergleichData, setVergleichData] = useState(preVergleichData || []);
+    const [detailData, setDetailData] = useState(preDetailData);
 
     useEffect(() => {
         if (stimmkreis == null) return;
 
-        fetch(process.env.NEXT_PUBLIC_BACKEND_URL + '/stimmkreisvergleichvorjahr?order=prozent2018.desc&stimmkreis=eq.' + stimmkreis).then(resp => {
-            if (resp.ok) {
-                resp.json()
-                    .then(data => setVergleichData(data))
-                    .catch(err => console.error('Failed to deserialize JSON', err));
-            } else {
-                console.warn('Backend Request not successful', resp);
-            }
-        }).catch(err => console.error('Backend Request failed', err))
+        loadData(`/stimmkreisvergleichvorjahr?order=prozent2018.desc&stimmkreis=eq.${stimmkreis}`, setVergleichData);
     }, [stimmkreis]);
 
     useEffect(() => {
         if (stimmkreis == null) return;
 
-        fetch(process.env.NEXT_PUBLIC_BACKEND_URL + '/stimmkreisdetails?stimmkreis=eq.' + stimmkreis + '&landtagswahl=eq.2018').then(resp => {
-            if (resp.ok) {
-                resp.json()
-                    .then(data => setDetailData(data[0]))
-                    .catch(err => console.error('Failed to deserialize JSON', err));
-            } else {
-                console.warn('Backend Request not successful', resp);
-            }
-        }).catch(err => console.error('Backend Request failed', err))
+        loadData(`/stimmkreisdetails?stimmkreis=eq.${stimmkreis}&landtagswahl=eq.2018`, o => setDetailData(o[0]));
     }, [stimmkreis]);
-
-    useEffect(() => console.log('Vorjahres-Vergleichs Daten', vergleichData), [vergleichData]);
 
     const formatPercent = o => Math.round(o * 100 * 100) / 100;
 

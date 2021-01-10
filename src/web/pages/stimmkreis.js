@@ -12,8 +12,7 @@ import {
     Typography
 } from "@material-ui/core";
 import {groupBy} from "../src/helper/groupBy";
-import {Doughnut} from "react-chartjs-2";
-import {getPartyColor} from "../src/helper/partyColor";
+import {loadData} from "../src/helper/serverSide";
 
 const useStyles = makeStyles(theme => ({
     table: {
@@ -33,21 +32,15 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-export default function Stimmkreis(props) {
+export const getServerSideProps = async () => await loadData('/stimmkreissiegerpartei?order=stimmkreis.asc');
+
+export default function Stimmkreis({data}) {
     const classes = useStyles();
 
-    const [stimmkreisSiegerData, setStimmkreisSiegerData] = useState([]);
+    const [stimmkreisSiegerData, setStimmkreisSiegerData] = useState(data || []);
 
     useEffect(() => {
-        fetch(process.env.NEXT_PUBLIC_BACKEND_URL + '/stimmkreissiegerpartei?order=stimmkreis.asc').then(resp => {
-            if (resp.ok) {
-                resp.json()
-                    .then(data => setStimmkreisSiegerData(data))
-                    .catch(err => console.error('Failed to deserialize JSON', err));
-            } else {
-                console.warn('Backend Request not successful', resp);
-            }
-        }).catch(err => console.error('Backend Request failed', err))
+        loadData('/stimmkreissiegerpartei?order=stimmkreis.asc', setStimmkreisSiegerData);
     }, []);
 
     useEffect(() => console.log('Stimmkreis Sieger', stimmkreisSiegerData), [stimmkreisSiegerData]);
@@ -66,7 +59,7 @@ export default function Stimmkreis(props) {
         <div className={classes.wrapper}>
             <Typography variant="h4" color="primary">Stimmkreis Übersicht</Typography>
             <TableContainer className={classes.table}>
-                <Table size="small">
+                <Table stickyHeader={true} size="small">
                     <TableHead>
                         <TableRow>
                             <TableCell>Stimmkreis Nummer</TableCell>

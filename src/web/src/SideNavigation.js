@@ -38,10 +38,10 @@ function SideNavigation(props) {
                 <Link href={'/stimmkreis'} color="textPrimary" variant="subtitle1">Stimmkreisübersicht</Link>
             </ListItem>
             <ListItem>
-                <Link href={'/gewaehlte'} color="textPrimary" variant="subtitle1">Gewählte</Link>
+                <Link href={'/gewaehlte/2018'} color="textPrimary" variant="subtitle1">Gewählte</Link>
             </ListItem>
             <ListItem>
-                <Link href={'/knapp'} color="textPrimary" variant="subtitle1">Knappste Siege/Verluste</Link>
+                <Link href={'/knapp/2018'} color="textPrimary" variant="subtitle1">Knappste Sieger/Verlierer</Link>
             </ListItem>
             <ListItem>
                 <Link href={'/bruttobedarf'} color="textPrimary" variant="subtitle1">Brutto Bedarf</Link>
