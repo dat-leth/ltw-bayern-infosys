@@ -43,6 +43,8 @@ services:
       - "./database/VIEW_ProzentProBruttoBedarf.sql:/docker-entrypoint-initdb.d/130-create-view-prozent-pro-brutto-bedarf.sql"
       - "./database/Import_Auslaenderquote.sql:/docker-entrypoint-initdb.d/140-import-auslaenderquote.sql"
       - "./database/VIEW_StimmkreisDetails.sql:/docker-entrypoint-initdb.d/150-create-view-stimmkreisdetails.sql"
+      - "./database/FUNCTION_Stimmzettel_Erststimme.sql:/docker-entrypoint-initdb.d/160-create-function-stimmzettel-erststimme.sql"
+      - "./database/FUNCTION_Stimmzettel_Zweitstimme.sql:/docker-entrypoint-initdb.d/170-create-function-stimmzettel-zweitstimme.sql"
       - "./database:/database"
       - "./scripts/docker-entrypoint.sh:/override-docker-entrypoint.sh"
 networks:
