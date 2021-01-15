@@ -1,10 +1,13 @@
 CREATE FUNCTION W.STIMMZETTEL_ZWEITSTIMME(WAHLKREIS text) RETURNS TABLE(
+	persnr integer,
 	name text,
 	partei text,
 	wahlkreis text,
 	listenplatz integer
 ) AS $$
-SELECT K.NAME,
+SELECT 
+	K.PERSNR,
+	K.NAME,
 	K.PARTEI,
 	K.LISTENKANDIDATINWAHLKREIS,
 	K.LISTENPLATZ

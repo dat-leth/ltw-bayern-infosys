@@ -8,7 +8,7 @@ CREATE TABLE W.Landtagswahl (
 );
 
 CREATE TABLE W.WahlabgabeToken (
-    token varchar(255) not null primary key,
+    token varchar(255) unique not null primary key,
     landtagswahl int not null references W.Landtagswahl,
     erststimmeAbgegeben bool not null,
     zweitstimmeAbgegeben bool not null

@@ -1,7 +1,6 @@
-CREATE FUNCTION W.STIMMZETTEL_ERSTSTIMME(stimmkreis integer) returns table(nummer bigint, name text, partei text) as $$
-SELECT row_number() OVER (
-		order by t.ord
-	),
+CREATE FUNCTION W.STIMMZETTEL_ERSTSTIMME(stimmkreis integer) returns table(nummer int, name text, partei text) as $$
+SELECT 
+	K.PERSNR,
 	K.NAME,
 	K.PARTEI
 FROM W.KANDIDAT K
