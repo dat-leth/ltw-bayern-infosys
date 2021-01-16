@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import SideNavigation from "../src/SideNavigation";
-import { makeStyles, Typography, Stepper, Step, StepLabel, Button } from "@material-ui/core";
+import { makeStyles, Typography, Stepper, Step, StepLabel } from "@material-ui/core";
 import { useRouter } from 'next/router';
 import Step1TokenInput from "../src/stimmabgabe/step1TokenInput"
 import Step2StimmzettelErststimme from '../src/stimmabgabe/step2StimmzettelErststimme';
@@ -35,20 +35,14 @@ const useStyles = makeStyles(theme => ({
 
 export default function Stimmabgabe() {
   const router = useRouter();
-  const { wahlkreis, stimmkreis } = router.query
+  const { wahlkreis, stimmkreis, wahllokal } = router.query
 
   const classes = useStyles();
 
   const [activeStep, setActiveStep] = useState(0);
   const steps = ['Token zur Stimmabgabe eintragen', 'Erststimme abgeben', 'Zweitstimme abgeben', 'Stimmenabgabe bestätigen'];
-  const handleNext = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-  };
-  const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
-  };
 
-  const [token, setToken] = useState(null)
+  const [token, setToken] = useState('')
   const [stimmzettelErststimme, setStimmzettelErststimme] = useState()
   const [stimmzettelZweitstimme, setStimmzettelZweitstimme] = useState()
   const [erststimme, setErststimme] = useState(null)
@@ -92,7 +86,7 @@ export default function Stimmabgabe() {
   return <>
     <SideNavigation drawerWidth={300} />
     <div className={classes.wrapper}>
-      <Typography variant="h4" color="primary">Stimmabgabe in Wahlkreis {wahlkreis} / Stimmkreis {stimmkreis} </Typography>
+      <Typography variant="h4" color="primary">Stimmabgabe in Wahlkreis {wahlkreis} / Stimmkreis {stimmkreis} / Wahllokal {wahllokal}</Typography>
       <Stepper activeStep={activeStep}>
         {steps.map((label) => {
           return (
@@ -114,7 +108,7 @@ export default function Stimmabgabe() {
               { activeStep === 0 && <Step1TokenInput maxSteps={steps.length} activeStep={activeStep} setActiveStep={setActiveStep} token={token} setToken={setToken}></Step1TokenInput>}
               { activeStep === 1 && <Step2StimmzettelErststimme maxSteps={steps.length} activeStep={activeStep} setActiveStep={setActiveStep} stimmzettelErststimme={stimmzettelErststimme} erststimme={erststimme} setErststimme={setErststimme}></Step2StimmzettelErststimme>}
               { activeStep === 2 && <Step3StimmzettelZweitstimme maxSteps={steps.length} activeStep={activeStep} setActiveStep={setActiveStep} stimmzettelZweitstimme={stimmzettelZweitstimme} zweitstimme={zweitstimme} setZweitstimme={setZweitstimme}></Step3StimmzettelZweitstimme>}
-              { activeStep === 3 && <Step4Confirm maxSteps={steps.length} activeStep={activeStep} setActiveStep={setActiveStep} stimmzettelErststimme={stimmzettelErststimme} stimmzettelZweitstimme={stimmzettelZweitstimme} erststimme={erststimme} zweitstimme={zweitstimme} token={token}></Step4Confirm>}
+              { activeStep === 3 && <Step4Confirm wahlkreis={wahlkreis} stimmkreis={stimmkreis} wahllokal={wahllokal} maxSteps={steps.length} activeStep={activeStep} setActiveStep={setActiveStep} stimmzettelErststimme={stimmzettelErststimme} stimmzettelZweitstimme={stimmzettelZweitstimme} erststimme={erststimme} zweitstimme={zweitstimme} token={token}></Step4Confirm>}
             </div>
           )}
       </div>

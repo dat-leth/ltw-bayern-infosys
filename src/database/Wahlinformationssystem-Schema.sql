@@ -1,6 +1,10 @@
+CREATE EXTENSION pgcrypto;
+
 DROP SCHEMA IF EXISTS W cascade; -- Drop if already existing
+DROP SCHEMA IF EXISTS WAHLHELFER cascade;
 
 CREATE SCHEMA W;
+CREATE SCHEMA WAHLHELFER;
 
 CREATE TABLE W.Landtagswahl (
     jahr int not null primary key,
@@ -8,10 +12,13 @@ CREATE TABLE W.Landtagswahl (
 );
 
 CREATE TABLE W.WahlabgabeToken (
-    token varchar(255) unique not null primary key,
+    token text not null primary key,
+    wahllokal text not null,
     landtagswahl int not null references W.Landtagswahl,
     erststimmeAbgegeben bool not null,
-    zweitstimmeAbgegeben bool not null
+    zweitstimmeAbgegeben bool not null,
+    mktime timestamp DEFAULT now(),
+    chtime timestamp
 );
 
 CREATE TABLE W.Wahlkreis (

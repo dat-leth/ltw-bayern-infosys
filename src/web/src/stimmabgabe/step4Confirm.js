@@ -1,5 +1,6 @@
 import { Button, makeStyles } from "@material-ui/core";
-
+import { Alert, AlertTitle } from '@material-ui/lab';
+import { useState } from "react";
 
 const useStyles = makeStyles(theme => ({
   button: {
@@ -14,12 +15,39 @@ const useStyles = makeStyles(theme => ({
 
 export default function Step4Confirm(props) {
   const classes = useStyles()
+  const [error, setError] = useState()
 
   const handleNext = () => {
-    props.setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    const data = {
+      perso_nr: props.token,
+      wahllokal_id: props.wahllokal,
+      wahlkreis: props.wahlkreis,
+      stimmkreis: +props.stimmkreis,
+      e_kandidat: props.erststimme,
+      z_kandidat: props.zweitstimme.kandidat,
+      z_partei: props.zweitstimme.partei
+    }
+
+
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/rpc/stimmabgabe`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      .then((res) => {
+        if (res.status === 200) {
+          props.setActiveStep((prevActiveStep) => prevActiveStep + 1);
+        }
+        return res.json()
+      })
+      .then((data) => setError(data));
+
+
   };
   const handleBack = () => {
-    // TODO: Perform POST
     props.setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
@@ -45,6 +73,10 @@ export default function Step4Confirm(props) {
   }
 
   return <>
+    { error && (<Alert severity="error">
+      <AlertTitle>{error.hint}</AlertTitle>
+      {error.details}
+    </Alert>)}
     <div>
       <dl>
         <dd>Ihre Personalausweisnummer</dd>

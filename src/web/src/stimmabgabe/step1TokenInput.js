@@ -16,7 +16,9 @@ export default function Step1TokenInput(props) {
   const classes = useStyles()
 
   const handleNext = () => {
-    props.setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    if (props.token) {
+      props.setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    }
   };
   const handleBack = () => {
     props.setActiveStep((prevActiveStep) => prevActiveStep - 1);
@@ -25,7 +27,7 @@ export default function Step1TokenInput(props) {
   return <>
     <div>
       <form autoComplete="off">
-        <TextField id="outlined-basic" label="Personalausweisnummer" variant="outlined" value={props.token} onChange={(event) => props.setToken(event.target.value)}/>
+        <TextField id="outlined-basic" label="Personalausweisnummer" variant="outlined" value={props.token} onChange={(event) => props.setToken(event.target.value)} error={!props.token} helperText="Bitte Personalausweisnummer eintragen!"/>
       </form>
     </div>
     <div>
