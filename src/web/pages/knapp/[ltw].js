@@ -102,9 +102,9 @@ export default function Knapp({preParteiData, preKnappData}) {
             <Table>
                 <TableHead>
                     <TableRow>
-                        <TableCell>Partei</TableCell>
+                        <TableCell>Kandidat*in (Partei)</TableCell>
                         <TableCell>verlor/gewann</TableCell>
-                        <TableCell>Partei</TableCell>
+                        <TableCell>Kandidat*in (Partei)</TableCell>
                         <TableCell>Stimmendifferenz (in %)</TableCell>
                         <TableCell>Stimmkreis</TableCell>
                     </TableRow>
@@ -112,9 +112,9 @@ export default function Knapp({preParteiData, preKnappData}) {
                 <TableBody>
                     {filteredKnappData.map((versus) => (
                         <TableRow>
-                            <TableCell>{versus.partei}</TableCell>
+                            <TableCell>{versus.kandidat} ({versus.partei})</TableCell>
                             <TableCell>{versus.platzierung_erststimmen === 1 ? 'gewann' : 'verlor'} gegen</TableCell>
-                            <TableCell>{versus.partei_vs}</TableCell>
+                            <TableCell>{versus.kandidat_vs} ({versus.partei_vs})</TableCell>
                             <TableCell>um {versus.diff_abs} Stimmen
                                 ({Intl.NumberFormat({maximumSignificantDigits: 3}).format(versus.diff_proz * 100)} %)</TableCell>
                             <TableCell>in {versus.stimmkreisname} ({versus.stimmkreis})</TableCell>
