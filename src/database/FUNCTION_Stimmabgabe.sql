@@ -1,4 +1,6 @@
-CREATE FUNCTION W.Stimmabgabe(perso_nr text, wahllokal_id text, wahlkreis text, stimmkreis integer, e_kandidat integer, z_kandidat integer, z_partei text) RETURNS VOID AS $$
+CREATE FUNCTION W.Stimmabgabe(perso_nr text, wahllokal_id text, wahlkreis text, stimmkreis integer, e_kandidat integer, z_kandidat integer, z_partei text) RETURNS VOID
+    SECURITY DEFINER
+    AS $$
 	DECLARE
     BEGIN
       UPDATE W.WAHLABGABETOKEN SET erststimmeabgegeben = true, chtime = now() WHERE token = digest(perso_nr, 'sha256')::text and wahllokal = wahllokal_id and erststimmeabgegeben = false;

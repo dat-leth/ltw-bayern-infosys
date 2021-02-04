@@ -10,9 +10,9 @@ services:
     links:
       - db:db
     environment:
-      PGRST_DB_URI: postgres://postgres:postgres@db:5432/postgres
+      PGRST_DB_URI: postgres://postgrest:postgrest@db:5432/postgres
       PGRST_DB_SCHEMA: w
-      PGRST_DB_ANON_ROLE: postgres # In production this role should not be the same as the one used for the connection
+      PGRST_DB_ANON_ROLE: postgrest # In production this role should not be the same as the one used for the connection
       PGRST_SERVER_PROXY_URI: "http://127.0.0.1:3030"
     depends_on:
       - db
@@ -48,6 +48,7 @@ services:
       - "./database/FUNCTION_Stimmzettel_Zweitstimme.sql:/docker-entrypoint-initdb.d/190-create-function-stimmzettel-zweitstimme.sql"
       - "./database/FUNCTION_activate_perso.sql:/docker-entrypoint-initdb.d/200-create-function-activate-perso.sql"
       - "./database/FUNCTION_Stimmabgabe.sql:/docker-entrypoint-initdb.d/210-create-function-stimmabgabe.sql"
+      - "./database/CREATE_USER.sql:/docker-entrypoint-initdb.d/220-create-user.sql"
       - "./database:/database"
       - "./scripts/docker-entrypoint.sh:/override-docker-entrypoint.sh"
 networks:
