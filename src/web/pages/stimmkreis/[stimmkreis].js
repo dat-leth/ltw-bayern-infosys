@@ -101,7 +101,11 @@ export default function Stimmkreis({preVergleichData, preDetailData}) {
         loadData(`/stimmkreisdetails?stimmkreis=eq.${stimmkreis}&landtagswahl=eq.2018`, o => setDetailData(o[0]));
     }, [stimmkreis]);
 
-    const formatPercent = o => Math.round(o * 100 * 100) / 100;
+    const formatPercent = o => {
+        const p = Math.round(o * 100 * 100) / 100;
+        if (isFinite(p)) return p;
+        return '-';
+    };
 
     const formatDecimal = o => {
         if (o == null) return;
@@ -213,6 +217,8 @@ export default function Stimmkreis({preVergleichData, preDetailData}) {
                                         <TableCell align="right">Stimmen 2013</TableCell>
                                         <TableCell align="right">Anteil 2018 (%)</TableCell>
                                         <TableCell align="right">Anteil 2013 (%)</TableCell>
+                                        <TableCell align="right">Veränderung</TableCell>
+                                        <TableCell align="right">Veränderung der Prozentpunkte</TableCell>
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -227,6 +233,8 @@ export default function Stimmkreis({preVergleichData, preDetailData}) {
                                             <TableCell align="right">{formatDecimal(o.gesamtstimmen2013) || '-'}</TableCell>
                                             <TableCell align="right">{formatPercent(o.prozent2018)}</TableCell>
                                             <TableCell align="right">{formatPercent(o.prozent2013)}</TableCell>
+                                            <TableCell align="right">{formatDecimal(o.gesamtstimmen2018 - o.gesamtstimmen2013)}</TableCell>
+                                            <TableCell align="right">{formatPercent(o.prozent2018 - o.prozent2013)}</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
