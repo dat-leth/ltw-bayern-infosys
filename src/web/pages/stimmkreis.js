@@ -17,7 +17,7 @@ import {loadData} from "../src/helper/serverSide";
 const useStyles = makeStyles(theme => ({
     table: {
         width: '100%',
-        padding: theme.spacing(7, 7)
+        margin: theme.spacing(7, 7)
     },
     wrapper: {
         display: 'flex',
@@ -42,8 +42,6 @@ export default function Stimmkreis({data}) {
     useEffect(() => {
         loadData('/stimmkreissiegerpartei?order=stimmkreis.asc', setStimmkreisSiegerData);
     }, []);
-
-    useEffect(() => console.log('Stimmkreis Sieger', stimmkreisSiegerData), [stimmkreisSiegerData]);
 
     const wahlkreise = useMemo(() => {
         return [...new Set(stimmkreisSiegerData.map(o => o.wahlkreisname))]
@@ -88,6 +86,11 @@ export default function Stimmkreis({data}) {
                                             <Link href={`stimmkreis/${o.stimmkreis}`}>
                                                 {o.stimmkreisname}
                                             </Link>
+                                            <span>  (</span>
+                                            <Link href={`stimmkreis_nonmat/${o.stimmkreis}`}>
+                                                Non Materialized
+                                            </Link>
+                                            <span>)</span>
                                         </TableCell>
                                         <TableCell align="right">{o.erststimmensieger}</TableCell>
                                         <TableCell align="right">{o.erststimmen}</TableCell>

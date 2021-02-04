@@ -48,7 +48,8 @@ services:
       - "./database/FUNCTION_Stimmzettel_Zweitstimme.sql:/docker-entrypoint-initdb.d/190-create-function-stimmzettel-zweitstimme.sql"
       - "./database/FUNCTION_activate_perso.sql:/docker-entrypoint-initdb.d/200-create-function-activate-perso.sql"
       - "./database/FUNCTION_Stimmabgabe.sql:/docker-entrypoint-initdb.d/210-create-function-stimmabgabe.sql"
-      - "./database/CREATE_USER.sql:/docker-entrypoint-initdb.d/220-create-user.sql"
+      - "./database/VIEW_Q7.sql:/docker-entrypoint-initdb.d/220-non-materialized.sql"
+      - "./database/CREATE_USER.sql:/docker-entrypoint-initdb.d/230-create-user.sql"
       - "./database:/database"
       - "./scripts/docker-entrypoint.sh:/override-docker-entrypoint.sh"
 networks:
