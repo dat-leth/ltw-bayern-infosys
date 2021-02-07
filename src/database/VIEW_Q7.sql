@@ -103,8 +103,8 @@ WITH StimmenProStimmkreis AS (
     GROUP BY s.landtagswahl, s.stimmkreis
 ), GesamtStimmenProzent AS (
     SELECT s.landtagswahl, s.stimmkreis, x.stimmkreisname, x.wahlkreisname, s.partei,
-           coalesce(s.erststimmen + s.zweitstimmen, 0) as GesamtStimmen,
-           coalesce(s.erststimmen + s.zweitstimmen, 0) / sps.anzahl as Prozent
+           coalesce(s.erststimmen, 0) + coalesce(s.zweitstimmen, 0) as GesamtStimmen,
+           (coalesce(s.erststimmen, 0) + coalesce(s.zweitstimmen, 0)) / sps.anzahl as Prozent
     FROM w.StimmenProParteiStimmkreis_NONMAT s
              INNER JOIN StimmenProStimmkreis sps
                         ON sps.landtagswahl = s.landtagswahl

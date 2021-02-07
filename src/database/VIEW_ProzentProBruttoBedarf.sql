@@ -1,7 +1,7 @@
 CREATE VIEW w.ProzentProBruttoBedarf AS
     WITH GesamtStimmen AS (
         SELECT s.landtagswahl, s.stimmkreis, x.stimmkreisname, x.wahlkreisname, s.partei,
-               coalesce(s.erststimmen + s.zweitstimmen, 0) as GesamtStimmen
+               coalesce(s.erststimmen, 0) + coalesce(s.zweitstimmen, 0) as GesamtStimmen
         FROM w.StimmenProParteiStimmkreis s
         INNER JOIN w.stimmkreis x
             ON x.landtagswahl = s.landtagswahl
